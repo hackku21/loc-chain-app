@@ -16,7 +16,9 @@ class BluetoothPage extends StatefulWidget {
 }
 
 class _BluetoothPageState extends State<BluetoothPage> {
-  final id = SharedPreferences.getInstance().then((s) => s.getString('id'));
+  // final String id = getId();
+  // String getId() =>
+  //     SharedPreferences.getInstance().then((s) => s.getString('id') ?? '0');
 
   @override
   Widget build(BuildContext context) {
@@ -25,8 +27,23 @@ class _BluetoothPageState extends State<BluetoothPage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: Text('$id'),
+        child: ElevatedButton(
+          child: Text("GetID"),
+          onPressed: () async {
+            final prefs = await SharedPreferences.getInstance();
+            final id = prefs.getString('id');
+
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text("Id is $id")));
+          },
+        ),
       ),
     );
+  }
+
+  void showSnackbar(dynamic a) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(a.toString()),
+    ));
   }
 }
