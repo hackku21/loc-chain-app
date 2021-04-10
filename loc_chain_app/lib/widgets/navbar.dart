@@ -6,7 +6,7 @@ import '../pages/bluetooth.dart';
 import '../pages/settings.dart';
 
 class NavBarWidget extends StatefulWidget {
-  NavBarWidget({Key key}) : super(key: key);
+  NavBarWidget({Key? key}) : super(key: key);
 
   @override
   _NavBarWidgetState createState() => _NavBarWidgetState();
@@ -14,7 +14,7 @@ class NavBarWidget extends StatefulWidget {
 
 class _NavBarWidgetState extends State<NavBarWidget> {
   int _selectedIndex = 0;
-  StatefulWidget _selectedWidget;
+  Widget _selectedWidget = HomePage(title: 'Home');
   static List<Widget> pages = <Widget>[
     HomePage(
       title: 'Home',

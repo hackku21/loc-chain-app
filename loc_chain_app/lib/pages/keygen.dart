@@ -1,10 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:rsa_encrypt/rsa_encrypt.dart' as rsa;
-import 'package:pointycastle/api.dart' as crypto;
+import 'package:flutter/widgets.dart';
+import 'package:fast_rsa/rsa.dart';
+import 'package:fast_rsa/model/bridge.pb.dart';
+import 'package:path_provider/path_provider.dart';
+
+import 'dart:io';
+
+class KeyFileManager {
+  static Future<String> get _localPath async {
+    final directory = await getApplicationDocumentsDirectory();
+    return directory.path;
+  }
+
+  static Future<File> get _pubKeyFile async {
+    final path = await _localPath;
+    return File('$path/rsa.pub');
+  }
+
+  static Future<File> get _privKeyFile async {
+    final path = await _localPath;
+    return File('$path/rsa');
+  }
+
+  static Future<KeyPair> readKeyPair() async {
+    try {
+      String privKey = await _privKeyFile.then(
+        (file) => file.readAsString(),
+      );
+      String pubKey = await _pubKeyFile.then(
+        (file) => file.readAsString(),
+      );
+
+      return KeyPair(
+        privateKey: privKey,
+        publicKey: pubKey,
+      );
+    } catch (e) {
+      print(e);
+      return KeyPair();
+    }
+  }
+
+  static Future<void> writeKeyPair(KeyPair pair) async {
+    final File privKeyFile = await _privKeyFile;
+    final File pubKeyFile = await _pubKeyFile;
+    pubKeyFile.writeAsString(pair.publicKey);
+    privKeyFile.writeAsString(pair.privateKey);
+  }
+}
 
 class KeygenPage extends StatefulWidget {
-  KeygenPage({Key key, this.title}) : super(key: key);
+  KeygenPage({Key? key, required this.title}) : super(key: key);
   final String title;
 
   @override
@@ -12,76 +59,81 @@ class KeygenPage extends StatefulWidget {
 }
 
 class _KeygenState extends State<KeygenPage> {
-  static crypto.AsymmetricKeyPair _keyPair;
+  KeyPair _keyPair = KeyPair();
 
-  void _regenerateKey() {
-    setState(() {
-      _keyPair = rsa.getRsaKeyPair(rsa.RsaKeyHelper().getSecureRandom());
+  @override
+  void initState() {
+    super.initState();
+    KeyFileManager.readKeyPair().then((keyPair) {
+      if (!keyPair.hasPublicKey()) {
+        initKeyPair();
+      } else {
+        setState(() => _keyPair = keyPair);
+      }
     });
   }
 
-  String _getPublicKey() {
-    if (_keyPair == null)
-      return 'Press the button below to generate your key pair!';
-    return '${rsa.RsaKeyHelper().encodePublicKeyToPemPKCS1(_keyPair.publicKey)}';
+  Future<void> initKeyPair() async {
+    var keyPair = await RSA.generate(2048);
+    await KeyFileManager.writeKeyPair(keyPair);
+    setState(() {
+      _keyPair = keyPair;
+    });
+  }
+
+  void copyPublicKey() {
+    if (_keyPair.hasPublicKey()) {
+      Clipboard.setData(
+        new ClipboardData(
+          text: _keyPair.publicKey,
+        ),
+      ).then((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("RSA public key copied to keyboard"),
+          ),
+        );
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("You need to generate an RSA keypair before copying."),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: Text('RSA Key Configuration'),
       ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            TextButton(
-              onPressed: () => Clipboard.setData(
-                new ClipboardData(
-                  text: _getPublicKey(),
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            return ListView(
+              children: <Widget>[
+                Container(
+                  padding: const EdgeInsets.all(32),
+                  child: TextButton(
+                    onPressed: copyPublicKey,
+                    child: Text(
+                      _keyPair.publicKey,
+                      style: Theme.of(context).textTheme.bodyText1,
+                      softWrap: true,
+                    ),
+                    style: Theme.of(context).outlinedButtonTheme.style,
+                  ),
                 ),
-              ).then((_) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text("RSA public key copied to keyboard"),
-                ));
-              }),
-              child: Text(
-                _getPublicKey(),
-                style: Theme.of(context).textTheme.bodyText1,
-              ),
-              style: Theme.of(context).outlinedButtonTheme.style,
-            ),
-            ElevatedButton(
-              onPressed: _regenerateKey,
-              child: Text('Reset RSA Key'),
-              style: Theme.of(context).elevatedButtonTheme.style,
-            ),
-          ],
+                ElevatedButton(
+                  onPressed: initKeyPair,
+                  child: Text('Reset RSA Key'),
+                  style: Theme.of(context).elevatedButtonTheme.style,
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
