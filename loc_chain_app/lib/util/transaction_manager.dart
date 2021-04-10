@@ -2,6 +2,7 @@ import 'package:fast_rsa/model/bridge.pb.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:fast_rsa/rsa.dart';
+import 'package:dbcrypt/dbcrypt.dart';
 
 import 'package:loc_chain_app/util/keyfile_manager.dart';
 
@@ -14,14 +15,14 @@ class Transaction {
   }
   late final String _id;
   final String hash;
-  static Future<String> signTransaction(String otherUserId) async {
+  static Future<String> generateHash(String otherUserId) async {
     String id = await SharedPreferences.getInstance()
         .then((s) => s.getString('userName') ?? '');
     bool idLess = id.compareTo(otherUserId) < 0;
     var lesser = idLess ? id : otherUserId;
     var greater = idLess ? otherUserId : id;
-    return RSA.signPKCS1v15("$lesser-$greater", Hash.HASH_SHA256,
-        KeyFileManager.keyPair.privateKey);
+    return DBCrypt()
+        .hashpw("$lesser-$greater", KeyFileManager.keyPair.privateKey);
   }
 }
 
