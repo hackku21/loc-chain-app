@@ -3,6 +3,8 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
 class KeyFileManager {
+  static KeyPair keyPair = KeyPair();
+
   static Future<String> get _localPath async {
     final directory = await getApplicationDocumentsDirectory();
     return directory.path;
@@ -19,6 +21,9 @@ class KeyFileManager {
   }
 
   static Future<KeyPair> readKeyPair() async {
+    if (keyPair.hasPublicKey() && keyPair.hasPrivateKey()) {
+      return keyPair;
+    }
     try {
       String privKey = await _privKeyFile.then(
         (file) => file.readAsString(),
@@ -26,11 +31,11 @@ class KeyFileManager {
       String pubKey = await _pubKeyFile.then(
         (file) => file.readAsString(),
       );
-
-      return KeyPair(
+      keyPair = KeyPair(
         privateKey: privKey,
         publicKey: pubKey,
       );
+      return keyPair;
     } catch (e) {
       print(e);
       return KeyPair();
@@ -38,9 +43,10 @@ class KeyFileManager {
   }
 
   static Future<void> writeKeyPair(KeyPair pair) async {
+    keyPair = pair;
     final File privKeyFile = await _privKeyFile;
     final File pubKeyFile = await _pubKeyFile;
-    pubKeyFile.writeAsString(pair.publicKey);
-    privKeyFile.writeAsString(pair.privateKey);
+    pubKeyFile.writeAsString(keyPair.publicKey);
+    privKeyFile.writeAsString(keyPair.privateKey);
   }
 }
