@@ -31,10 +31,10 @@ class _BluetoothPageState extends State<BluetoothPage> {
           child: Text("GetID"),
           onPressed: () async {
             final prefs = await SharedPreferences.getInstance();
-            final id = prefs.getString('id');
+            final userName = prefs.getString('userName');
 
             ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text("Id is $id")));
+                .showSnackBar(SnackBar(content: Text("Id is $userName")));
           },
         ),
       ),

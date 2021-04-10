@@ -6,7 +6,7 @@ import 'dart:math';
 void main() async {
   runApp(App());
   final prefs = await SharedPreferences.getInstance();
-  final id = prefs.getString('id') ?? '0';
+  final userName = prefs.getString('userName') ?? '0';
   if (id == '0') {
     prefs.setString('id', Random().nextInt(10000).toString());
   }
