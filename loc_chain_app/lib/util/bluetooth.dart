@@ -8,29 +8,44 @@ import 'package:nearby_connections/nearby_connections.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Connect {
+  final serviceId = "com.yourdomain.appname";
+  final Strategy strategy = Strategy.P2P_STAR;
+  late final _userName;
+
+  Map<String, ConnectionInfo> endpointMap = Map();
+
+  Connect() {
+    SharedPreferences.getInstance()
+        .then((s) => _userName = s.getString('userName') ?? '0');
+  }
+
   void startConnect() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userName = prefs.getString('userName') ?? " ";
-    final Strategy strategy = Strategy.P2P_STAR;
-    final serviceId = "com.yourdomain.appname";
+    // final prefs = await SharedPreferences.getInstance();
+    // final userName = prefs.getString('userName') ?? " ";
 
     try {
       bool advertise = await Nearby().startAdvertising(
-        userName,
+        _userName,
         strategy,
         onConnectionInitiated: (String id, ConnectionInfo info) {
           // Called whenever a discoverer requests connection
+          //
+          // onConnectionInit
         },
         onConnectionResult: (String id, Status status) {
           // Called when connection is accepted/rejected
+          // if connection is accepted send the transaction
+          //
+          //
         },
         onDisconnected: (String id) {
           // Callled whenever a discoverer disconnects from advertiser
         },
         serviceId: serviceId, // uniquely identifies your app
       );
+
       bool discovery = await Nearby().startDiscovery(
-        userName,
+        _userName,
         strategy,
         onEndpointFound: (String id, String userName, String serviceId) {
           // called when an advertiser is found
