@@ -5,8 +5,10 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:nearby_connections/nearby_connections.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 class BluetoothPage extends StatefulWidget {
-  BluetoothPage({Key key, this.title}) : super(key: key);
+  BluetoothPage({Key? key, required this.title}) : super(key: key);
   final String title;
 
   @override
@@ -14,7 +16,7 @@ class BluetoothPage extends StatefulWidget {
 }
 
 class _BluetoothPageState extends State<BluetoothPage> {
-  final String userName = Random().nextInt(10000).toString();
+  final id = SharedPreferences.getInstance().then((s) => s.getString('id'));
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +24,9 @@ class _BluetoothPageState extends State<BluetoothPage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(),
+      body: Center(
+        child: Text('$id'),
+      ),
     );
   }
 }
