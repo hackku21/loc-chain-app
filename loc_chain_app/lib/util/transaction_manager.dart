@@ -19,8 +19,9 @@ class Transaction {
     bool idLess = id.compareTo(otherUserId) < 0;
     var lesser = idLess ? id : otherUserId;
     var greater = idLess ? otherUserId : id;
-    return DBCrypt()
-        .hashpw("$lesser-$greater", KeyFileManager.keyPair.privateKey);
+    // return DBCrypt()
+    //     .hashpw("$lesser-$greater", KeyFileManager.keyPair.privateKey);
+    return "$lesser-$greater";
   }
 
   Future<String> generateP2PPayload(String otherUserId) async =>

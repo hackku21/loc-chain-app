@@ -42,13 +42,15 @@ class Connect {
         _userName,
         strategy,
         onConnectionInitiated: onConnectionInit,
-        onConnectionResult: (String id, Status status) {
+        onConnectionResult: (String id, Status status) async {
           // Called when connection is accepted/rejected
           // if connection is accepted send the transaction
-          endpointMap.forEach((key, value) async {
-            String str = await Transaction.generateHash(key);
-            Nearby().sendBytesPayload(key, Uint8List.fromList(str.codeUnits));
-          });
+          if (status != Status.CONNECTED) {
+            return;
+          }
+          // Connected to other device, send combined hash and pub key
+          String str = await Transaction.generateHash(id);
+          Nearby().sendBytesPayload(id, Uint8List.fromList(str.codeUnits));
         },
         onDisconnected: (String id) {
           // Callled whenever a discoverer disconnects from advertiser
@@ -69,8 +71,15 @@ class Connect {
             userName,
             id,
             onConnectionInitiated: onConnectionInit,
-            onConnectionResult: (id, status) {
-              showSnackbar(status);
+            onConnectionResult: (String id, Status status) async {
+              // Called when connection is accepted/rejected
+              // if connection is accepted send the transaction
+              if (status != Status.CONNECTED) {
+                return;
+              }
+              // Connected to other device, send combined hash and pub key
+              String str = await Transaction.generateHash(id);
+              Nearby().sendBytesPayload(id, Uint8List.fromList(str.codeUnits));
             },
             onDisconnected: (id) {
               endpointMap.remove(id);
@@ -114,8 +123,9 @@ class Connect {
         transactionMap[_otherId] =
             Transaction(hash: combinedHash, pubKey: publicKey);
         // sign combined hash with our private key
+        showSnackbar('Received $_otherId payload: $combinedHash');
+        print('Received $_otherId payload: $combinedHash:$publicKey');
         // upload hash+otherKey to firebase
-        transactionMap.remove(_otherId);
       },
       onPayloadTransferUpdate: (endid, payloadTransferUpdate) {
         if (payloadTransferUpdate.status == PayloadStatus.IN_PROGRESS) {
