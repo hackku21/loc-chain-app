@@ -9,12 +9,10 @@ import 'package:loc_chain_app/util/keyfile_manager.dart';
 import 'dart:io';
 
 class Transaction {
-  Transaction({required this.hash}) {
-    SharedPreferences.getInstance()
-        .then((s) => _id = s.getString('userName') ?? '0');
-  }
-  late final String _id;
+  Transaction({required this.hash, required this.pubKey});
   final String hash;
+  final String pubKey;
+
   static Future<String> generateHash(String otherUserId) async {
     String id = await SharedPreferences.getInstance()
         .then((s) => s.getString('userName') ?? '');
@@ -24,6 +22,9 @@ class Transaction {
     return DBCrypt()
         .hashpw("$lesser-$greater", KeyFileManager.keyPair.privateKey);
   }
+
+  Future<String> generateP2PPayload(String otherUserId) async =>
+      "${await generateHash(otherUserId)}:${KeyFileManager.keyPair.publicKey}";
 }
 
 class TransactionsDBManager {
