@@ -9,13 +9,14 @@ import 'dart:io';
 
 class Transaction {
   Transaction({required this.hash}) {
-    SharedPreferences.getInstance().then((s) => _id = s.getString('id') ?? '0');
+    SharedPreferences.getInstance()
+        .then((s) => _id = s.getString('userName') ?? '0');
   }
   late final String _id;
   final String hash;
-  static Future<String> makeTransactionHash(String otherUserId) async {
+  static Future<String> signTransaction(String otherUserId) async {
     String id = await SharedPreferences.getInstance()
-        .then((s) => s.getString('id') ?? '');
+        .then((s) => s.getString('userName') ?? '');
     bool idLess = id.compareTo(otherUserId) < 0;
     var lesser = idLess ? id : otherUserId;
     var greater = idLess ? otherUserId : id;

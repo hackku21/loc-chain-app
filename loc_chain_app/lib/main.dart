@@ -7,7 +7,7 @@ void main() async {
   runApp(App());
   final prefs = await SharedPreferences.getInstance();
   final userName = prefs.getString('userName') ?? '0';
-  if (id == '0') {
+  if (userName == '0') {
     prefs.setString('id', Random().nextInt(10000).toString());
   }
 }
