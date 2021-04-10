@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:loc_chain_app/pages/home.dart';
 import 'package:loc_chain_app/pages/keygen.dart';
 
+import '../pages/bluetooth.dart';
+import '../pages/settings.dart';
+
 class NavBarWidget extends StatefulWidget {
   NavBarWidget({Key key}) : super(key: key);
 
@@ -16,9 +19,15 @@ class _NavBarWidgetState extends State<NavBarWidget> {
     HomePage(
       title: 'Home',
     ),
+    BluetoothPage(
+      title: 'Connect',
+    ),
     KeygenPage(
       title: 'RSA Configuration',
     ),
+    SettingsPage(
+      title: 'Settings',
+    )
   ];
   void _onItemTapped(int index) => setState(() {
         _selectedIndex = index;
@@ -36,8 +45,18 @@ class _NavBarWidgetState extends State<NavBarWidget> {
               backgroundColor: Colors.cyan,
             ),
             BottomNavigationBarItem(
+              icon: Icon(Icons.bluetooth),
+              label: 'Connect',
+              backgroundColor: Colors.cyan,
+            ),
+            BottomNavigationBarItem(
               icon: Icon(Icons.lock_rounded),
               label: 'RSA Configuration',
+              backgroundColor: Colors.cyan,
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.lock_rounded),
+              label: 'Settings',
               backgroundColor: Colors.cyan,
             ),
           ],
