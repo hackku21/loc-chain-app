@@ -1,7 +1,9 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_udid/flutter_udid.dart';
-import 'package:loc_chain_app/util/bluetooth.dart';
 import 'package:loc_chain_app/util/transaction_manager.dart';
+import 'package:nearby_connections/nearby_connections.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({Key? key, required this.title}) : super(key: key);
@@ -12,65 +14,77 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final Future<String> _id = FlutterUdid.consistentUdid;
-  Connect connector = Connect();
-  Map<String, Transaction> transactionMap = Map();
-  // String getId() =>
-  //     SharedPreferences.getInstance().then((s) => s.getString('id') ?? '0');
-
-  void refreshTransactions() {
-    setState(() {
-      transactionMap = Connect.transactionMap;
-      Connect.context = context;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      getUUID();
+      startAdvertising();
+      startDiscovery();
     });
   }
 
+  static late String userName;
+  final Strategy strategy = Strategy.P2P_STAR;
+  Map<String, ConnectionInfo> endpointMap = Map();
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: FutureBuilder<String>(
-          future: _id, // a previously-obtained Future<String> or null
-          builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-            String content = "Loading id...";
-            if (snapshot.hasData) {
-              content = "ID: ${snapshot.data!}";
-            }
-            List<Card> transactions = List.generate(
-              transactionMap.length,
-              (index) {
-                Transaction t = transactionMap.values.elementAt(index);
-                return Card(
-                  child: Row(
-                    children: [Text(t.hash), Text(t.pubKey)],
-                  ),
-                );
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: ListView(
+          children: <Widget>[
+            Text("User Name: " + userName),
+            Divider(),
+            Text("Number of connected devices: ${endpointMap.length}"),
+            ElevatedButton(
+              child: Text("Stop All Endpoints"),
+              onPressed: () async {
+                await Nearby().stopAllEndpoints();
+                setState(() {
+                  endpointMap.clear();
+                });
               },
-            );
-            return ListView(
-              children: <Widget>[
-                    Container(
-                      child: Text(content),
-                    ),
-                  ] +
-                  transactions,
-            );
-          }),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          refreshTransactions();
-          try {
-            Connect.stop();
-            Connect.start();
-          } catch (e) {
-            print(e);
-          }
-        },
-        child: Icon(Icons.refresh_sharp),
+            ),
+            Divider(),
+            Text(
+              "Sending Data",
+            ),
+            ElevatedButton(
+              child: Text("Send Bytes Payload"),
+              onPressed: () async {
+                sendPayload();
+              },
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  String genPayload(ConnectionInfo value) {
+    print("Sender ID: $userName");
+    print("Receiver ID: ${value.endpointName}");
+
+    var dateTime = DateTime.now();
+    print('Milliseconds since Epoch: ${dateTime.millisecondsSinceEpoch}');
+
+    String payload = userName +
+        ":" +
+        value.endpointName +
+        ":" +
+        dateTime.millisecondsSinceEpoch.toString();
+    return payload;
+  }
+
+  void sendPayload() {
+    endpointMap.forEach((key, value) {
+      String a = genPayload(value);
+
+      showSnackbar("Sending $a to ${value.endpointName}, id: $key");
+      Nearby().sendBytesPayload(key, Uint8List.fromList(a.codeUnits));
+    });
   }
 
   void showSnackbar(dynamic a) {
@@ -79,5 +93,122 @@ class _HomePageState extends State<HomePage> {
     ));
   }
 
-  Future<void> reportExposure() async {}
+  void getUUID() async {
+    userName = await FlutterUdid.consistentUdid;
+  }
+
+  void stopAll() async {
+    await Nearby().stopAllEndpoints();
+    await Nearby().stopAdvertising();
+    await Nearby().stopDiscovery();
+    setState(() {});
+  }
+
+  void startDiscovery() async {
+    try {
+      userName = await FlutterUdid.consistentUdid;
+      bool a = await Nearby().startDiscovery(
+        userName,
+        strategy,
+        onEndpointFound: (id, name, serviceId) {
+          print("userName = $userName");
+          print("id = $id");
+
+          Nearby().requestConnection(
+            userName,
+            id,
+            onConnectionInitiated: (id, info) {
+              onConnectionInit(id, info);
+              sleep(Duration(microseconds: 500));
+              sendPayload();
+            },
+            onConnectionResult: (id, status) {
+              showSnackbar(status);
+            },
+            onDisconnected: (id) {
+              setState(() {
+                endpointMap.remove(id);
+              });
+              showSnackbar(
+                  "Disconnected from: ${endpointMap[id]!.endpointName}, id $id");
+            },
+          );
+        },
+        onEndpointLost: (id) {
+          showSnackbar(
+              "Lost discovered Endpoint: ${endpointMap[id]!.endpointName}, id $id");
+        },
+      );
+      showSnackbar("DISCOVERING: " + a.toString());
+    } catch (e) {
+      showSnackbar(e);
+    }
+    setState(() {});
+  }
+
+  void startAdvertising() async {
+    try {
+      userName = await FlutterUdid.consistentUdid;
+
+      bool a = await Nearby().startAdvertising(
+        userName,
+        strategy,
+        onConnectionInitiated: (id, info) {
+          onConnectionInit(id, info);
+          sleep(Duration(microseconds: 500));
+          sendPayload();
+        }, //advertisingOnConnectionInit,
+        onConnectionResult: (id, status) {
+          print("userName = $userName");
+          print("id = $id");
+          print(status);
+          showSnackbar(status);
+        },
+        onDisconnected: (id) {
+          showSnackbar(
+              "Disconnected: ${endpointMap[id]!.endpointName}, id $id");
+          setState(() {
+            endpointMap.remove(id);
+          });
+        },
+      );
+      showSnackbar("ADVERTISING: " + a.toString());
+    } catch (exception) {
+      showSnackbar(exception);
+    }
+    setState(() {});
+  }
+
+  /// Called upon Connection request (on both devices)
+  /// Both need to accept connection to start sending/receiving
+  void onConnectionInit(String id, ConnectionInfo info) {
+    setState(() {
+      endpointMap[id] = info;
+    });
+    Nearby().acceptConnection(
+      id,
+      onPayLoadRecieved: (endid, payload) async {
+        if (payload.type == PayloadType.BYTES) {
+          String str = String.fromCharCodes(payload.bytes!);
+
+          // first device recives here
+          print("Receiving:");
+          print("${str.split(":")}");
+
+          showSnackbar(endid + ": " + str);
+        }
+      },
+      onPayloadTransferUpdate: (endid, payloadTransferUpdate) {
+        if (payloadTransferUpdate.status == PayloadStatus.IN_PROGRESS) {
+          print(payloadTransferUpdate.bytesTransferred);
+        } else if (payloadTransferUpdate.status == PayloadStatus.FAILURE) {
+          print("failed");
+          showSnackbar(endid + ": FAILED to transfer file");
+        } else if (payloadTransferUpdate.status == PayloadStatus.SUCCESS) {
+          showSnackbar(
+              "$endid success, total bytes = ${payloadTransferUpdate.totalBytes}");
+        }
+      },
+    );
+  }
 }
