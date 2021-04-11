@@ -78,6 +78,4 @@ class _HomePageState extends State<HomePage> {
       content: Text(a.toString()),
     ));
   }
-
-  Future<void> reportExposure() async {}
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dbcrypt/dbcrypt.dart';
 import 'package:flutter_udid/flutter_udid.dart';
 import 'package:loc_chain_app/util/keyfile_manager.dart';
 
@@ -7,18 +8,26 @@ class Transaction {
   final String hash;
   final String pubKey;
 
-  static Future<String> generateHash(String otherUserId) async {
+  static Future<Transaction> create(String otherUserId) async {
     String id = await FlutterUdid.consistentUdid;
     bool idLess = id.compareTo(otherUserId) < 0;
     var lesser = idLess ? id : otherUserId;
     var greater = idLess ? otherUserId : id;
-    // return DBCrypt()
-    //     .hashpw("$lesser-$greater", KeyFileManager.keyPair.privateKey);
-    return "$lesser-$greater";
+    return Transaction(
+      hash: DBCrypt()
+          .hashpw("$lesser-$greater", KeyFileManager.keyPair.privateKey),
+      pubKey: KeyFileManager.keyPair.publicKey,
+    );
   }
 
-  Future<String> generateP2PPayload(String otherUserId) async =>
-      "${await generateHash(otherUserId)}:${KeyFileManager.keyPair.publicKey}";
+  Map<String, dynamic> toJson() => {
+        "combinedHash": hash,
+        "publicKey": pubKey,
+      };
+
+  Transaction.fromJson(Map<String, dynamic> json)
+      : hash = json['combinedHash'],
+        pubKey = json['publicKey'];
 }
 
 class EncounterTransaction {
