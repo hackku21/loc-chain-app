@@ -14,8 +14,7 @@ class Transaction {
     var lesser = idLess ? id : otherUserId;
     var greater = idLess ? otherUserId : id;
     return Transaction(
-      hash: DBCrypt()
-          .hashpw("$lesser-$greater", KeyFileManager.keyPair.privateKey),
+      hash: DBCrypt().hashpw("$lesser-$greater", DBCrypt().gensalt()),
       pubKey: KeyFileManager.keyPair.publicKey,
     );
   }

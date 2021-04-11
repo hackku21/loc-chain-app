@@ -207,12 +207,16 @@ class _HomePageState extends State<HomePage> {
             combinedHash: transaction.hash,
             encodedGPSLocation: "{'none':true}",
             partnerPublicKey: transaction.pubKey,
-            validationSignature: await OpenPGP.encrypt(
-                transaction.hash, KeyFileManager.keyPair.privateKey),
+            validationSignature: await OpenPGP.sign(
+              transaction.hash,
+              transaction.pubKey,
+              KeyFileManager.keyPair.publicKey,
+              '',
+            ),
           );
           var response = await postEncounter(encounter);
           print(response);
-          showSnackbar(response.body);
+          // showSnackbar(response.body);
         }
       },
       onPayloadTransferUpdate: (endid, payloadTransferUpdate) {

@@ -34,7 +34,7 @@ class _KeygenState extends State<KeygenPage> {
   }
 
   Future<void> initKeyPair() async {
-    var options = KeyOptions()..rsaBits = 2048;
+    var options = KeyOptions()..rsaBits = 512;
     var keyPair =
         await OpenPGP.generate(options: Options()..keyOptions = options);
     await KeyFileManager.writeKeyPair(keyPair);
