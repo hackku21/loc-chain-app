@@ -3,11 +3,13 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_udid/flutter_udid.dart';
+import 'package:loc_chain_app/util/requests.dart';
 import 'package:loc_chain_app/util/transaction_manager.dart';
 import 'package:nearby_connections/nearby_connections.dart';
 
 import 'package:loc_chain_app/util/keyfile_manager.dart';
 import 'package:loc_chain_app/util/transaction_manager.dart';
+import 'package:openpgp/openpgp.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({Key? key, required this.title}) : super(key: key);
@@ -201,6 +203,16 @@ class _HomePageState extends State<HomePage> {
           print("${transaction.hash}");
 
           showSnackbar(endid + ": " + transaction.hash);
+          var encounter = EncounterTransaction(
+            combinedHash: transaction.hash,
+            encodedGPSLocation: "{'none':true}",
+            partnerPublicKey: transaction.pubKey,
+            validationSignature: await OpenPGP.sign(
+                transaction.hash, '', KeyFileManager.keyPair.privateKey, ''),
+          );
+          var response = await postEncounter(encounter);
+          print(response);
+          showSnackbar(response.body);
         }
       },
       onPayloadTransferUpdate: (endid, payloadTransferUpdate) {
