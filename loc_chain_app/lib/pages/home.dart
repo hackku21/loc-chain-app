@@ -5,6 +5,9 @@ import 'package:flutter_udid/flutter_udid.dart';
 import 'package:loc_chain_app/util/transaction_manager.dart';
 import 'package:nearby_connections/nearby_connections.dart';
 
+import 'package:loc_chain_app/util/keyfile_manager.dart';
+import 'package:loc_chain_app/util/transaction_manager.dart';
+
 class HomePage extends StatefulWidget {
   HomePage({Key? key, required this.title}) : super(key: key);
   final String title;
@@ -27,6 +30,7 @@ class _HomePageState extends State<HomePage> {
   static late String userName;
   final Strategy strategy = Strategy.P2P_STAR;
   Map<String, ConnectionInfo> endpointMap = Map();
+  static Map<String, Transaction> transactionMap = Map();
 
   @override
   Widget build(BuildContext context) {
@@ -63,24 +67,25 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  String genPayload(ConnectionInfo value) {
+  Future<String> genPayload(ConnectionInfo value) async {
     print("Sender ID: $userName");
     print("Receiver ID: ${value.endpointName}");
 
     var dateTime = DateTime.now();
+
     print('Milliseconds since Epoch: ${dateTime.millisecondsSinceEpoch}');
 
-    String payload = userName +
+    String p2p = await Transaction.generateHash(value.endpointName) +
         ":" +
         value.endpointName +
         ":" +
         dateTime.millisecondsSinceEpoch.toString();
-    return payload;
+    return p2p;
   }
 
-  void sendPayload() {
-    endpointMap.forEach((key, value) {
-      String a = genPayload(value);
+  void sendPayload() async {
+    endpointMap.forEach((key, value) async {
+      String a = await genPayload(value);
 
       showSnackbar("Sending $a to ${value.endpointName}, id: $key");
       Nearby().sendBytesPayload(key, Uint8List.fromList(a.codeUnits));
