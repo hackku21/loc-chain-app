@@ -207,8 +207,8 @@ class _HomePageState extends State<HomePage> {
             combinedHash: transaction.hash,
             encodedGPSLocation: "{'none':true}",
             partnerPublicKey: transaction.pubKey,
-            validationSignature: await OpenPGP.sign(
-                transaction.hash, '', KeyFileManager.keyPair.privateKey, ''),
+            validationSignature: await OpenPGP.encrypt(
+                transaction.hash, KeyFileManager.keyPair.privateKey),
           );
           var response = await postEncounter(encounter);
           print(response);
