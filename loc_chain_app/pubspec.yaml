@@ -30,10 +30,11 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
   path_provider: ^2.0.1
-  fast_rsa: ^1.4.0-nullsafety.4
+  fast_rsa: ^2.0.0-nullsafety.0
   sqflite: ^2.0.0+3
   dbcrypt: ^2.0.0
   flutter_udid: ^2.0.0
+  firebase_database: ^6.1.2
 
 dev_dependencies:
   flutter_test:
