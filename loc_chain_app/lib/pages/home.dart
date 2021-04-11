@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_udid/flutter_udid.dart';
+import 'package:loc_chain_app/util/bluetooth.dart';
+import 'package:loc_chain_app/util/transaction_manager.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({Key? key, required this.title}) : super(key: key);
@@ -9,16 +12,16 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _counter = 0;
+  final Future<String> _id = FlutterUdid.consistentUdid;
+  Connect connector = Connect();
+  Map<String, Transaction> transactionMap = Map();
+  // String getId() =>
+  //     SharedPreferences.getInstance().then((s) => s.getString('id') ?? '0');
 
-  void _incrementCounter() {
+  void refreshTransactions() {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      transactionMap = Connect.transactionMap;
+      Connect.context = context;
     });
   }
 
@@ -28,25 +31,51 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
-        ),
-      ),
+      body: FutureBuilder<String>(
+          future: _id, // a previously-obtained Future<String> or null
+          builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+            String content = "Loading id...";
+            if (snapshot.hasData) {
+              content = "ID: ${snapshot.data!}";
+            }
+            List<Card> transactions = List.generate(
+              transactionMap.length,
+              (index) {
+                Transaction t = transactionMap.values.elementAt(index);
+                return Card(
+                  child: Row(
+                    children: [Text(t.hash), Text(t.pubKey)],
+                  ),
+                );
+              },
+            );
+            return ListView(
+              children: <Widget>[
+                    Container(
+                      child: Text(content),
+                    ),
+                  ] +
+                  transactions,
+            );
+          }),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
+        onPressed: () {
+          refreshTransactions();
+          try {
+            Connect.stop();
+            Connect.start();
+          } catch (e) {
+            print(e);
+          }
+        },
+        child: Icon(Icons.refresh_sharp),
       ),
     );
+  }
+
+  void showSnackbar(dynamic a) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(a.toString()),
+    ));
   }
 }

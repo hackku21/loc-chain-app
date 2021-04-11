@@ -33,6 +33,7 @@ dependencies:
   fast_rsa: ^1.4.0-nullsafety.4
   sqflite: ^2.0.0+3
   dbcrypt: ^2.0.0
+  flutter_udid: ^2.0.0
 
 dev_dependencies:
   flutter_test:
