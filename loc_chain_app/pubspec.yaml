@@ -34,7 +34,8 @@ dependencies:
   sqflite: ^2.0.0+3
   dbcrypt: ^2.0.0
   flutter_udid: ^2.0.0
-  firebase_database: ^6.1.2
+  loading_animations: ^2.2.0
+  openpgp: ^2.0.0-nullsafety.0
 
 dev_dependencies:
   flutter_test:
