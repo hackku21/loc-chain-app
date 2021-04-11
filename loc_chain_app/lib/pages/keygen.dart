@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-import 'package:fast_rsa/rsa.dart';
-import 'package:fast_rsa/model/bridge.pb.dart';
+import 'package:openpgp/openpgp.dart';
+import 'package:openpgp/model/bridge.pb.dart';
 
 import 'package:loc_chain_app/util/keyfile_manager.dart';
 
@@ -25,13 +25,18 @@ class _KeygenState extends State<KeygenPage> {
       if (!keyPair.hasPublicKey()) {
         initKeyPair();
       } else {
-        setState(() => _keyPair = keyPair);
+        setState(() {
+          _keyPair.publicKey = keyPair.publicKey;
+          _keyPair.privateKey = keyPair.privateKey;
+        });
       }
     });
   }
 
   Future<void> initKeyPair() async {
-    var keyPair = await RSA.generate(2048);
+    var options = KeyOptions()..rsaBits = 2048;
+    var keyPair =
+        await OpenPGP.generate(options: Options()..keyOptions = options);
     await KeyFileManager.writeKeyPair(keyPair);
     setState(() {
       _keyPair = keyPair;
@@ -64,7 +69,7 @@ class _KeygenState extends State<KeygenPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('RSA Key Configuration'),
+        title: Text('PGP Key Configuration'),
       ),
       body: Center(
         child: LayoutBuilder(
@@ -85,7 +90,7 @@ class _KeygenState extends State<KeygenPage> {
                 ),
                 ElevatedButton(
                   onPressed: initKeyPair,
-                  child: Text('Reset RSA Key'),
+                  child: Text('Reset PGP Key'),
                   style: Theme.of(context).elevatedButtonTheme.style,
                 ),
               ],

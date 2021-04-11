@@ -1,4 +1,4 @@
-import 'package:fast_rsa/model/bridge.pb.dart';
+import 'package:openpgp/model/bridge.pb.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
@@ -31,10 +31,8 @@ class KeyFileManager {
       String pubKey = await _pubKeyFile.then(
         (file) => file.readAsString(),
       );
-      keyPair = KeyPair(
-        privateKey: privKey,
-        publicKey: pubKey,
-      );
+      keyPair.publicKey = pubKey;
+      keyPair.privateKey = privKey;
       return keyPair;
     } catch (e) {
       print(e);
